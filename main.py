@@ -32,7 +32,7 @@ Rispondi SOLO con questo formato, niente testo extra.
 
 def call_model(user_input: str) -> str:
     chat_completion = client.chat.completions.create(
-        model="meta-llama/llama-3.1-8b-instruct:free",
+        model="meta-llama/llama-3.3-70b-instruct:free",
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_input},

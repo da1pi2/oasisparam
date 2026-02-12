@@ -170,15 +170,6 @@ with tab1:
         st.session_state.chat = []
         st.session_state.chat_history = []
 
-    # Aggiungi sezione per ottenere dati climatici
-    st.markdown("### Dati Climatici")
-    location = st.text_input("Inserisci una località per ottenere i dati climatici", "")
-    if location:
-        weather_data = get_weather_data(location)
-        if weather_data:
-            st.write("**Dati Climatici per**", location)
-            st.write(weather_data)
-
     # Tutorial interattivo
     if "show_tutorial" in st.session_state:
         del st.session_state["show_tutorial"]

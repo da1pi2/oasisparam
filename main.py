@@ -1,9 +1,11 @@
 import streamlit as st
-import openai
+from openai import OpenAI
 
 # Config OpenRouter
-openai.api_base = "https://openrouter.ai/api/v1"
-openai.api_key = st.secrets["OPENROUTER_API_KEY"]
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=st.secrets["OPENROUTER_API_KEY"],
+)
 
 SYSTEM_PROMPT = """
 Sei OasisParam AI, assistente per ARREDO URBANO VERDE parametrico (Nature-Based Solutions).
@@ -29,7 +31,7 @@ Rispondi SOLO con questo formato, niente testo extra.
 """
 
 def call_model(user_input: str) -> str:
-    completion = openai.ChatCompletion.create(
+    chat_completion = client.chat.completions.create(
         model="meta-llama/llama-3.1-8b-instruct:free",
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -38,7 +40,7 @@ def call_model(user_input: str) -> str:
         temperature=0.35,
         max_tokens=700,
     )
-    return completion.choices[0].message["content"]
+    return chat_completion.choices[0].message.content
 
 st.set_page_config(page_title="OasisParam AI", layout="wide")
 st.title("🌿 OasisParam AI Assistant")
@@ -62,4 +64,3 @@ if prompt:
             reply = call_model(prompt)
             st.markdown(reply)
     st.session_state.chat.append(("assistant", reply))
-

@@ -50,7 +50,7 @@ IMPORTANTE: Le specie vegetali DEVONO essere native/adatte al territorio SPECIFI
 
 def call_model(user_input: str) -> str:
     chat_completion = client.chat.completions.create(
-        model="google/gemini-2.0-flash-exp:free",
+        model="arcee-ai/trinity-large-preview:free",
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_input},

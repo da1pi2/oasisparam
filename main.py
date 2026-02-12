@@ -1,5 +1,7 @@
 import streamlit as st
 from openai import OpenAI
+import matplotlib.pyplot as plt
+import requests
 
 # Configurazione OpenRouter
 client = OpenAI(
@@ -73,6 +75,25 @@ def call_model(user_input: str) -> str:
 """
     return reply
 
+# Funzione per visualizzazione grafica
+def plot_parameters(parameters):
+    fig, ax = plt.subplots()
+    labels = list(parameters.keys())
+    values = list(parameters.values())
+
+    ax.barh(labels, values, color="skyblue")
+    ax.set_xlabel("Valori")
+    ax.set_title("Visualizzazione Parametri")
+
+    st.pyplot(fig)
+
+# Funzione per analisi statistiche
+def analyze_statistics(parameters):
+    st.markdown("## Analisi Statistiche")
+    st.write("**Media dei Valori:**", sum(parameters.values()) / len(parameters))
+    st.write("**Valore Massimo:**", max(parameters.values()))
+    st.write("**Valore Minimo:**", min(parameters.values()))
+
 # ============ INTERFACCIA CON TAB ============
 
 st.set_page_config(page_title="OasisParam AI - Giorgia", layout="wide", page_icon="🌿")
@@ -87,25 +108,91 @@ tab1, tab2 = st.tabs(["💬 Chat AI", "📖 Istruzioni & Guida Grasshopper"])
 with tab1:
     st.markdown("### Descrivi il tuo progetto di oasi urbana")
     st.markdown("*Esempio: 'piazza calda a Palermo, budget medio, socialità + ombra'*")
-    
+
     if "chat" not in st.session_state:
         st.session_state.chat = []
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
 
-    for role, content in st.session_state.chat:
-        with st.chat_message(role):
-            st.markdown(content)
+    # Colonna sinistra per lo storico delle chat con filtro
+    col1, col2 = st.columns([1, 3])
 
-    prompt = st.chat_input("Descrivi contesto, clima, obiettivi...")
-    if prompt:
-        st.session_state.chat.append(("user", prompt))
-        with st.chat_message("user"):
-            st.markdown(prompt)
+    with col1:
+        st.markdown("### Storico Chat")
+        search_term = st.text_input("Cerca nello storico", "")
 
-        with st.chat_message("assistant"):
-            with st.spinner("Genero configurazione e parametri..."):
-                reply = call_model(prompt)
-                st.markdown(reply)
-        st.session_state.chat.append(("assistant", reply))
+        filtered_history = [
+            (i, history) for i, history in enumerate(st.session_state.chat_history)
+            if search_term.lower() in " ".join([msg[1] for msg in history]).lower()
+        ]
+
+        for i, history in filtered_history:
+            if st.button(f"Chat {i + 1}"):
+                st.session_state.chat = history
+
+    with col2:
+        # Visualizza i messaggi della chat
+        chat_container = st.container()
+        with chat_container:
+            for role, content in st.session_state.chat:
+                with st.chat_message(role):
+                    st.markdown(content)
+
+        # Barra di input sempre visibile
+        prompt = st.chat_input("Descrivi contesto, clima, obiettivi...")
+        if prompt:
+            st.session_state.chat.append(("user", prompt))
+
+            with st.chat_message("user"):
+                st.markdown(prompt)
+
+            with st.chat_message("assistant"):
+                with st.spinner("Genero configurazione e parametri..."):
+                    reply = call_model(prompt)
+                    if reply:
+                        st.markdown(reply)
+
+                        # Estrai parametri e visualizzali
+                        parameters = {
+                            "Lunghezza": 2.4,
+                            "Larghezza": 0.6,
+                            "Altezza": 0.45,
+                            "Moduli": 3,
+                            "Veg_H": 1.2
+                        }  # Sostituisci con parsing dinamico se necessario
+                        plot_parameters(parameters)
+                        analyze_statistics(parameters)
+
+            st.session_state.chat.append(("assistant", reply))
+
+    # Suggerimenti automatici per l'input
+    suggestions = [
+        "piazza calda a Palermo, budget medio, socialità + ombra",
+        "parco urbano a Milano, inverno freddo, manutenzione bassa",
+        "waterfront Genova, vento forte, solo permeabilità",
+        "cortile scolastico, bambini 6-10 anni, budget basso",
+        "piazza centrale, socialità + ombra, budget alto"
+    ]
+
+    st.markdown("### Suggerimenti per il tuo progetto")
+    for suggestion in suggestions:
+        if st.button(suggestion):
+            st.session_state.chat.append(("user", suggestion))
+
+            with st.chat_message("user"):
+                st.markdown(suggestion)
+
+            with st.chat_message("assistant"):
+                with st.spinner("Genero configurazione e parametri..."):
+                    reply = call_model(suggestion)
+                    if reply:
+                        st.markdown(reply)
+            st.session_state.chat.append(("assistant", reply))
+
+    # Pulsante per cancellare la chat
+    if st.button("Cancella Chat"):
+        st.session_state.chat_history.append(st.session_state.chat)
+        st.session_state.chat = []
 
 # ========== TAB 2: ISTRUZIONI ==========
 with tab2:
@@ -340,3 +427,36 @@ Per domande tecniche su Grasshopper, consulta: [McNeel Forum](https://discourse.
 
 **Buon lavoro Giorgia! 🌿🎓**
     """)
+
+# Aggiungi sezione per ottenere dati climatici
+st.markdown("### Dati Climatici")
+location = st.text_input("Inserisci una località per ottenere i dati climatici", "")
+if location:
+    weather_data = get_weather_data(location)
+    if weather_data:
+        st.write("**Dati Climatici per**", location)
+        st.write(weather_data)
+
+# Tutorial interattivo
+if "show_tutorial" not in st.session_state:
+    st.session_state.show_tutorial = True
+
+def show_tutorial():
+    st.markdown("""
+    ## Benvenuto al Tutorial Interattivo 🌿
+
+    Questa guida ti aiuterà a utilizzare al meglio l'app OasisParam AI:
+
+    1. **Chat AI**: Vai al tab "Chat AI" e descrivi il tuo progetto.
+    2. **Suggerimenti**: Usa i suggerimenti predefiniti per iniziare rapidamente.
+    3. **Dati Climatici**: Inserisci una località per ottenere informazioni meteo in tempo reale.
+    4. **Visualizzazione Grafica**: Controlla i parametri generati con grafici interattivi.
+    5. **Storico Chat**: Accedi alle conversazioni precedenti e riprendi il lavoro.
+
+    Quando sei pronto, clicca su "Inizia" per chiudere il tutorial.
+    """)
+    if st.button("Inizia"):
+        st.session_state.show_tutorial = False
+
+if st.session_state.show_tutorial:
+    show_tutorial()
